@@ -1,0 +1,108 @@
+﻿using Telegram.Bot;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
+
+namespace UVindexTGBot
+{
+    internal class BotManager
+    {
+        internal string BotToken { get; set; }
+        public float Uvi { get; set; }
+        public double LatitudeFromUser { get; set; }
+        public double LongitudeFromUser { get; set; }
+        private ApiManager Api { get; set; }
+
+
+        internal BotManager(string botToken, ApiManager api)
+        {
+            BotToken = botToken;
+            Api = api;
+        }
+
+        public async Task StartReceiving()
+        {
+            var botClient = new TelegramBotClient(BotToken);
+            using CancellationTokenSource cts = new();
+            ReceiverOptions receiverOptions = new()
+            {
+                AllowedUpdates = Array.Empty<UpdateType>()
+            };
+
+            botClient.StartReceiving(
+                updateHandler: HandleUpdateAsync,
+                pollingErrorHandler: HandlePollingErrorAsync,
+                receiverOptions: receiverOptions,
+                cancellationToken: cts.Token
+            );
+
+            Console.WriteLine($"Bot has started");
+            Console.ReadLine();
+
+            await cts.CancelAsync();
+        }
+
+        private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        {
+            if (update.Message is not { } message)
+                return;
+
+            var chatId = message.Chat.Id;
+
+            if (message.Text is not null && message.Text.StartsWith("/getuv"))
+            {
+                var replyKeyboard = new ReplyKeyboardMarkup(new[]
+                    {
+                        new KeyboardButton("Send Location")
+                        {
+                            RequestLocation = true
+                        }
+                    })
+                {
+                    ResizeKeyboard = true,
+                    OneTimeKeyboard = true
+                };
+
+                await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: "Please share your location:",
+                    replyMarkup: replyKeyboard
+                );
+            }
+            else if (message.Type == MessageType.Location)
+            {
+                var location = message.Location;
+
+                if (location == null) return;
+
+                await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: $"Location received: Latitude: {location.Latitude}, Longitude: {location.Longitude}",
+                    replyMarkup: new ReplyKeyboardRemove()
+
+                );
+
+                LatitudeFromUser = location.Latitude;
+                LongitudeFromUser = location.Longitude;
+
+                Api.lat = LatitudeFromUser;
+                Api.lon = LongitudeFromUser;
+
+                await Api.GetUvFromApi();
+                Uvi = Api.Uvi;
+
+                await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: $"Current UV index is {Math.Ceiling(Uvi)}",
+                    cancellationToken: cancellationToken);
+            }
+        }
+
+        private Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"Polling error: {exception.Message}");
+            return Task.CompletedTask;
+        }
+    }
+}
