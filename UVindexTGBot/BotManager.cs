@@ -50,6 +50,14 @@ namespace UVindexTGBot
 
             var chatId = message.Chat.Id;
 
+            if (message.Text is not null && message.Text.StartsWith("/start"))
+            {
+                await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: "There are two ways to use this bot: \n\t\u2022 You can check the current UV index using the /getuv command. \n\t\u2022 You can also get updates on the UV index at specific intervals (like every hour) using the /setintervals command. You'll receive messages from sunrise to sunset because the UV index is 0 at night.",
+                    cancellationToken: cancellationToken);
+            }
+
             if (message.Text is not null && message.Text.StartsWith("/getuv"))
             {
                 var replyKeyboard = new ReplyKeyboardMarkup(new[]
@@ -78,7 +86,7 @@ namespace UVindexTGBot
 
                 await botClient.SendTextMessageAsync(
                     chatId: chatId,
-                    text: $"Location received: Latitude: {location.Latitude}, Longitude: {location.Longitude}",
+                    text: $"Location received.",
                     replyMarkup: new ReplyKeyboardRemove()
 
                 );

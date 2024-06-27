@@ -364,3 +364,4 @@ FodyWeavers.xsd
 UVindexTGBot/obj
 UVindexTGBot/bin
 *.suo
+.vs
