@@ -13,6 +13,7 @@ namespace UVindexTGBot
         public double LatitudeFromUser { get; set; }
         public double LongitudeFromUser { get; set; }
         private ApiManager Api { get; set; }
+        private bool IsLocationReceived = false;
 
 
         internal BotManager(string botToken, ApiManager api)
@@ -54,11 +55,14 @@ namespace UVindexTGBot
             {
                 await botClient.SendTextMessageAsync(
                     chatId: chatId,
-                    text: "There are two ways to use this bot: \n\t\u2022 You can check the current UV index using the /getuv command. \n\t\u2022 You can also get updates on the UV index at specific intervals (like every hour) using the /setintervals command. You'll receive messages from sunrise to sunset because the UV index is 0 at night.",
+                    text: "There are two ways to use this bot: " +
+                    "\n\t\u2022 You can check the current UV index using the /getuv command. " +
+                    "\n\t\u2022 You can also get updates on the UV index at specific intervals (like every hour) using the /setintervals command. " +
+                    "You'll receive messages from sunrise to sunset because the UV index is 0 at night.",
                     cancellationToken: cancellationToken);
             }
 
-            if (message.Text is not null && message.Text.StartsWith("/getuv"))
+            if (message.Text is not null && (message.Text.StartsWith("/getuv") || message.Text.StartsWith("/changelocation")) && !IsLocationReceived)
             {
                 var replyKeyboard = new ReplyKeyboardMarkup(new[]
                     {
@@ -78,25 +82,29 @@ namespace UVindexTGBot
                     replyMarkup: replyKeyboard
                 );
             }
-            else if (message.Type == MessageType.Location)
+            else if (message.Type == MessageType.Location && !IsLocationReceived)
             {
                 var location = message.Location;
 
                 if (location == null) return;
 
-                await botClient.SendTextMessageAsync(
-                    chatId: chatId,
-                    text: $"Location received.",
-                    replyMarkup: new ReplyKeyboardRemove()
-
-                );
-
+                IsLocationReceived = true;
                 LatitudeFromUser = location.Latitude;
                 LongitudeFromUser = location.Longitude;
 
+                await botClient.SendTextMessageAsync(
+                    chatId: chatId,
+                    text: $"Location received.",
+                    replyMarkup: new ReplyKeyboardRemove(),
+                    cancellationToken: cancellationToken
+                );
+
                 Api.lat = LatitudeFromUser;
                 Api.lon = LongitudeFromUser;
+            }
 
+            if (IsLocationReceived)
+            {
                 await Api.GetUvFromApi();
                 Uvi = Api.Uvi;
 
@@ -106,6 +114,8 @@ namespace UVindexTGBot
                     cancellationToken: cancellationToken);
             }
         }
+
+
 
         private Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
