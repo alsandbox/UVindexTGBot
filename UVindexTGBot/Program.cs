@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-
 using File = System.IO.File;
 
 namespace UVindexTGBot
