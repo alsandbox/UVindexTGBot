@@ -6,8 +6,8 @@ namespace UVindexTGBot
     {
         public string? UvApiUrl { get; set; }
         internal string? ApiKey;
-        public double lat { get; set; }
-        public double lon { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         private readonly long time = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         public float Uvi { get; set; }
         internal string? BotToken { get; set; }
@@ -16,7 +16,7 @@ namespace UVindexTGBot
         {
             Console.Write("Please, enter the API key: ");
             ApiKey = Console.ReadLine();
-            string allApi = $"{UvApiUrl}?lat={lat}&lon={lon}&dt={time}&appid={ApiKey}";
+            string allApi = $"{UvApiUrl}?lat={Latitude}&lon={Longitude}&dt={time}&appid={ApiKey}";
 
             using HttpClient client = new HttpClient();
             HttpResponseMessage response = await client.GetAsync(allApi);
