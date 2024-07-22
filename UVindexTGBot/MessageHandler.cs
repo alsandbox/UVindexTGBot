@@ -2,6 +2,8 @@
 using Telegram.Bot.Types;
 using Telegram.Bot;
 using System.Globalization;
+using Telegram.Bot.Types.ReplyMarkups;
+using Telegram.Bot.Exceptions;
 
 namespace UVindexTGBot
 {
@@ -12,7 +14,6 @@ namespace UVindexTGBot
         private readonly LocationService locationService;
         private readonly UvUpdateScheduler uvUpdateScheduler;
         private long chatId;
-        private bool isWaitingForInterval;        
 
         internal MessageHandler(TelegramBotClient botClient, LocationService locationService, UvUpdateScheduler uvUpdateScheduler, CancellationToken cancellationToken)
         {
@@ -26,13 +27,18 @@ namespace UVindexTGBot
         {
             try
             {
+                if (update.Type is UpdateType.CallbackQuery && update.CallbackQuery is not null)
+                {
+                    await HandleCallbackQueryAsync(update.CallbackQuery);
+                }
+
                 if (update.Message is not { } message)
                     return;
 
                 chatId = message.Chat.Id;
                 uvUpdateScheduler.ChatId = chatId;
 
-                if (message.Text is not null)
+                if (update.Type is UpdateType.Message && message.Text is not null)
                 {
                     switch (message.Text.Split(' ')[0])
                     {
@@ -40,10 +46,7 @@ namespace UVindexTGBot
                             await HandleStartCommandAsync();
                             break;
                         case "/getuv":
-                            if (locationService.IsLocationReceived)
                                 await uvUpdateScheduler.SendUvUpdateAsync();
-                            else
-                                await locationService.RequestLocationAsync(chatId);
                             break;
                         case "/changelocation":
                             await locationService.RequestLocationAsync(chatId);
@@ -57,16 +60,16 @@ namespace UVindexTGBot
                     }
                 }
 
-                if (message.Type == MessageType.Location && !locationService.IsLocationReceived)
+                if (message.Type is MessageType.Location && !locationService.IsLocationReceived)
                 {
                     await locationService.HandleLocationReceivedAsync(message);
                 }
-
-                if (isWaitingForInterval && !string.IsNullOrEmpty(message.Text))
-                {
-                    await HandleIntervalInputAsync(message.Text);
-                }
             }
+            catch (ApiRequestException apiEx) when (apiEx.ErrorCode is 400 && apiEx.Message.Contains("query is too old"))
+            {
+                Console.WriteLine($"API request error: {apiEx.Message}");
+            }
+
             catch (Exception ex)
             {
                 Console.WriteLine($"Unhandled exception in HandleUpdateAsync: {ex.Message}");
@@ -88,18 +91,52 @@ namespace UVindexTGBot
 
         private async Task HandleSetIntervalsCommandAsync()
         {
+            var buttons = new InlineKeyboardButton[][]
+            {
+                [
+                    InlineKeyboardButton.WithCallbackData("1 hour", "1"),
+                    InlineKeyboardButton.WithCallbackData("2 hours", "2"),
+                    InlineKeyboardButton.WithCallbackData("Once per day", "24"),
+                ],
+            };
+
+            var keyboard = new InlineKeyboardMarkup(buttons);
+
             await botClient.SendTextMessageAsync(
                 chatId: chatId,
-                text: "Please provide the interval in hours (e.g., 1, 2, 3):",
+                text: "Please select an interval:",
+                replyMarkup: keyboard,
                 cancellationToken: cancellationToken
             );
+        }
 
-            isWaitingForInterval = true;
+        private async Task HandleCallbackQueryAsync(CallbackQuery callbackQuery)
+        {
+            byte one = 1;
+            byte two = 2;
+            byte twentyFour = 24;
+
+            if (callbackQuery.Data == $"{one}")
+            {
+                await HandleIntervalInputAsync($"{one}");
+            }
+            else if (callbackQuery.Data == $"{two}")
+            {
+                await HandleIntervalInputAsync($"{two}");
+            }
+            else if (callbackQuery.Data == $"{twentyFour}")
+            {
+                await HandleIntervalInputAsync($"{twentyFour}");
+            }
+
+            await botClient.AnswerCallbackQueryAsync(
+                callbackQueryId: callbackQuery.Id,
+                cancellationToken: CancellationToken.None
+            );
         }
 
         private async Task HandleIntervalInputAsync(string text)
         {
-            isWaitingForInterval = false;
             string trimmedText = text.Trim();
 
             if (int.TryParse(trimmedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int hours))

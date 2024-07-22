@@ -40,7 +40,7 @@ namespace UVindexTGBot
         {
             var receiverOptions = new ReceiverOptions
             {
-                AllowedUpdates = new[] { UpdateType.Message }
+                AllowedUpdates = Array.Empty<UpdateType>()
             };
 
             botClient.StartReceiving(
