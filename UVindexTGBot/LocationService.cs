@@ -48,7 +48,7 @@ namespace UVindexTGBot
                 cancellationToken: cancellationToken
             );
 
-            api.Longitude = latitudeFromUser;
+            api.Latitude = latitudeFromUser;
             api.Longitude = longitudeFromUser;
         }
     }
