@@ -13,14 +13,12 @@ namespace UVindexTGBot
         private readonly CancellationToken cancellationToken;
         private readonly LocationService locationService;
         private readonly UvUpdateScheduler uvUpdateScheduler;
-        private ApiManager api;
         private long chatId;
         private bool isAwaitingCustomIntervalInput;
 
-        internal MessageHandler(TelegramBotClient botClient, ApiManager api, LocationService locationService, UvUpdateScheduler uvUpdateScheduler, CancellationToken cancellationToken)
+        internal MessageHandler(TelegramBotClient botClient, LocationService locationService, UvUpdateScheduler uvUpdateScheduler, CancellationToken cancellationToken)
         {
             this.botClient = botClient;
-            this.api = api;
             this.cancellationToken = cancellationToken;
             this.locationService = locationService;
             this.uvUpdateScheduler = uvUpdateScheduler;
