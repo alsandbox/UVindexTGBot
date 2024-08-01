@@ -6,8 +6,7 @@ namespace UVindexTGBot
 {
     internal class LocationService(TelegramBotClient botClient, ApiManager api, CancellationToken cancellationToken)
     {
-        private bool isLocationReceived;
-        public bool IsLocationReceived => isLocationReceived;
+        public bool IsLocationReceived { get; set; }
 
         public async Task RequestLocationAsync(long chatId)
         {
@@ -35,9 +34,19 @@ namespace UVindexTGBot
         {
             var location = message.Location;
 
-            if (location == null) return;
+            if (location is null || (location.Latitude <= 0 && location.Longitude <= 0))
+            {
+                await botClient.SendTextMessageAsync(
+                    chatId: message.Chat.Id,
+                    text: "Invalid location received. Please try again.",
+                    cancellationToken: cancellationToken
+                );
 
-            isLocationReceived = true;
+                await RequestLocationAsync(message.Chat.Id);
+                return;
+            }
+
+            IsLocationReceived = true;
             double latitudeFromUser = location.Latitude;
             double longitudeFromUser = location.Longitude;
 

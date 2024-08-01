@@ -70,9 +70,14 @@ namespace UVindexTGBot
                     }
                 }
 
-                if (message.Type is MessageType.Location && !locationService.IsLocationReceived)
+                if (message.Type is MessageType.Location)
                 {
                     await locationService.HandleLocationReceivedAsync(message);
+
+                    if (locationService.IsLocationReceived)
+                    {
+                        locationService.IsLocationReceived = false;
+                    }
                 }
             }
             catch (ApiRequestException apiEx) when (apiEx.ErrorCode is 400 && apiEx.Message.Contains("query is too old"))
