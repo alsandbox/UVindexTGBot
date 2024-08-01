@@ -13,11 +13,14 @@ namespace UVindexTGBot
         private readonly CancellationToken cancellationToken;
         private readonly LocationService locationService;
         private readonly UvUpdateScheduler uvUpdateScheduler;
+        private ApiManager api;
         private long chatId;
+        private bool isAwaitingCustomIntervalInput;
 
-        internal MessageHandler(TelegramBotClient botClient, LocationService locationService, UvUpdateScheduler uvUpdateScheduler, CancellationToken cancellationToken)
+        internal MessageHandler(TelegramBotClient botClient, ApiManager api, LocationService locationService, UvUpdateScheduler uvUpdateScheduler, CancellationToken cancellationToken)
         {
             this.botClient = botClient;
+            this.api = api;
             this.cancellationToken = cancellationToken;
             this.locationService = locationService;
             this.uvUpdateScheduler = uvUpdateScheduler;
@@ -40,23 +43,30 @@ namespace UVindexTGBot
 
                 if (update.Type is UpdateType.Message && message.Text is not null)
                 {
-                    switch (message.Text.Split(' ')[0])
+                    if (isAwaitingCustomIntervalInput)
                     {
-                        case "/start":
-                            await HandleStartCommandAsync();
-                            break;
-                        case "/getuv":
+                        await HandleIntervalInputAsync(message.Text);
+                    }
+                    else
+                    {
+                        switch (message.Text.Split(' ')[0])
+                        {
+                            case "/start":
+                                await HandleStartCommandAsync();
+                                break;
+                            case "/getuv":
                                 await uvUpdateScheduler.SendUvUpdateAsync();
-                            break;
-                        case "/changelocation":
-                            await locationService.RequestLocationAsync(chatId);
-                            break;
-                        case "/setintervals":
-                            await HandleSetIntervalsCommandAsync();
-                            break;
-                        case "/cancelintervals":
-                            uvUpdateScheduler.CancelUvUpdates();
-                            break;
+                                break;
+                            case "/changelocation":
+                                await locationService.RequestLocationAsync(chatId);
+                                break;
+                            case "/setintervals":
+                                await HandleSetIntervalsCommandAsync();
+                                break;
+                            case "/cancelintervals":
+                                uvUpdateScheduler.CancelUvUpdates();
+                                break;
+                        }
                     }
                 }
 
@@ -96,7 +106,11 @@ namespace UVindexTGBot
                 [
                     InlineKeyboardButton.WithCallbackData("1 hour", "1"),
                     InlineKeyboardButton.WithCallbackData("2 hours", "2"),
+                    InlineKeyboardButton.WithCallbackData("3 hours", "3"),
+                ],
+                [
                     InlineKeyboardButton.WithCallbackData("Once per day", "24"),
+                    InlineKeyboardButton.WithCallbackData("Custom", "custom"),
                 ],
             };
 
@@ -112,21 +126,22 @@ namespace UVindexTGBot
 
         private async Task HandleCallbackQueryAsync(CallbackQuery callbackQuery)
         {
-            byte one = 1;
-            byte two = 2;
-            byte twentyFour = 24;
-
-            if (callbackQuery.Data == $"{one}")
+            switch (callbackQuery.Data)
             {
-                await HandleIntervalInputAsync($"{one}");
-            }
-            else if (callbackQuery.Data == $"{two}")
-            {
-                await HandleIntervalInputAsync($"{two}");
-            }
-            else if (callbackQuery.Data == $"{twentyFour}")
-            {
-                await HandleIntervalInputAsync($"{twentyFour}");
+                case "1":
+                case "2":
+                case "3":
+                case "24":
+                    await HandleIntervalInputAsync(callbackQuery.Data);
+                    break;
+                case "custom":
+                    isAwaitingCustomIntervalInput = true;
+                    await botClient.SendTextMessageAsync(
+                        chatId: chatId,
+                        text: "Please enter a custom interval in hours (between 1 and 24):",
+                        cancellationToken: cancellationToken
+                    );
+                    break;
             }
 
             await botClient.AnswerCallbackQueryAsync(
@@ -139,7 +154,9 @@ namespace UVindexTGBot
         {
             string trimmedText = text.Trim();
 
-            if (int.TryParse(trimmedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int hours))
+
+            if (int.TryParse(trimmedText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int hours) 
+                && hours >= 1 && hours <= 24)
             {
                 var interval = TimeSpan.FromHours(hours);
                 uvUpdateScheduler.ScheduleUvUpdates(interval);
@@ -150,7 +167,10 @@ namespace UVindexTGBot
                     cancellationToken: cancellationToken
                 );
 
-                await uvUpdateScheduler.SendUvUpdateAsync();
+                if (isAwaitingCustomIntervalInput)
+                {
+                    isAwaitingCustomIntervalInput = false;
+                }
             }
             else
             {
