@@ -5,7 +5,7 @@ namespace UVindexTGBot
     internal class UvUpdateScheduler : IDisposable
     {
         private readonly TelegramBotClient botClient;
-        private readonly ApiManager api;
+        private readonly ApiManager apiManager;
         private readonly CancellationToken cancellationToken;
         private Timer? timer;
         private bool disposed;
@@ -15,7 +15,7 @@ namespace UVindexTGBot
         internal UvUpdateScheduler(TelegramBotClient botClient, ApiManager api, CancellationToken cancellationToken) 
         {
             this.botClient = botClient;
-            this.api = api;
+            apiManager = api;
             this.cancellationToken = cancellationToken;
         }
 
@@ -26,14 +26,26 @@ namespace UVindexTGBot
 
         internal async Task SendUvUpdateAsync()
         {
-            await api.GetUvFromApi();
-            var uvi = api.Uvi;
+            long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            await apiManager.GetWeatherDataFromApi();
+            var uvi = apiManager.Uvi;
 
-            await botClient.SendTextMessageAsync(
-                chatId: ChatId,
-                text: $"Current UV index is {uvi}",
-                cancellationToken: cancellationToken
-            );
+            if (currentTime >= apiManager.Sunrise && currentTime <= apiManager.Sunset)
+            {
+                await botClient.SendTextMessageAsync(
+                    chatId: ChatId,
+                    text: $"Current UV index is {uvi}",
+                    cancellationToken: cancellationToken
+                );
+            }
+            else
+            {
+                await botClient.SendTextMessageAsync(
+                    chatId: ChatId,
+                    text: "It's nighttime, and the UV index is typically 0.",
+                    cancellationToken: cancellationToken
+                );
+            }
         }
 
         internal void CancelUvUpdates()
