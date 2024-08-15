@@ -24,7 +24,7 @@ namespace UVindexTGBot
 
             await botClient.SendTextMessageAsync(
                 chatId: chatId,
-                text: "Please share your location:",
+                text: "To receive the UV index, please share your location:",
                 replyMarkup: replyKeyboard,
                 cancellationToken: cancellationToken
             );
@@ -52,7 +52,8 @@ namespace UVindexTGBot
 
             await botClient.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: $"Location received.",
+                text: $"Location received. Now you can start getting a UV index. " +
+                $"To do this, use the commands /getuv or /setintervals. ",
                 replyMarkup: new ReplyKeyboardRemove(),
                 cancellationToken: cancellationToken
             );
