@@ -53,7 +53,7 @@ namespace UVindexTGBot
                                 await HandleStartCommandAsync();
                                 break;
                             case "/getuv":
-                                await uvUpdateScheduler.SendUvUpdateAsync();
+                                await uvUpdateScheduler.SendUvUpdateAsync(isUserRequest: true);
                                 break;
                             case "/changelocation":
                                 await locationService.RequestLocationAsync(chatId);

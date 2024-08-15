@@ -24,7 +24,7 @@ namespace UVindexTGBot
             timer = new Timer(async state => await SendUvUpdateAsync(), null, TimeSpan.Zero, interval);
         }
 
-        internal async Task SendUvUpdateAsync()
+        internal async Task SendUvUpdateAsync(bool isUserRequest = false)
         {
             long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             await apiManager.GetWeatherDataFromApi();
@@ -38,7 +38,7 @@ namespace UVindexTGBot
                     cancellationToken: cancellationToken
                 );
             }
-            else
+            else if (isUserRequest)
             {
                 await botClient.SendTextMessageAsync(
                     chatId: ChatId,
