@@ -6,9 +6,8 @@ namespace UVindexTGBot
     internal class ApiManager
     {
         private const string ApiUrlTemplate = "{0}?lat={1}&lon={2}&dt={3}&appid={4}";
-
         public string? UvApiUrl { get; set; }
-        internal string? ApiKey;
+        internal string? ApiKey { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public float Uvi { get; set; }

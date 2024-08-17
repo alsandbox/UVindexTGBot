@@ -1,5 +1,7 @@
 ﻿using System.Text.Json;
 using File = System.IO.File;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace UVindexTGBot
 {
@@ -7,13 +9,11 @@ namespace UVindexTGBot
     {
         static async Task Main(string[] args)
         {
-            Console.Write("Please, enter the bot token: ");
-            string? botToken = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(botToken))
-            {
-                Console.WriteLine("Bot token cannot be empty.");
-                return;
-            }
+            Console.WriteLine("Reading bot token...");
+            string botToken = GetTokenFromArgsOrEnv(args, "BOT_TOKEN", 0);
+
+            Console.WriteLine("Reading API key...");
+            string apiKey = GetTokenFromArgsOrEnv(args, "API_KEY", 1);
 
             string fileName = "config.json";
 
@@ -22,12 +22,13 @@ namespace UVindexTGBot
                 string jsonString = await File.ReadAllTextAsync(fileName);
                 ApiManager? api = JsonSerializer.Deserialize<ApiManager>(jsonString);
 
-                if (api == null)
+                if (api is null)
                 {
                     Console.WriteLine("Failed to deserialize API manager from config file. API is null.");
                     return;
                 }
 
+                api.ApiKey = apiKey;
                 api.BotToken = botToken;
 
                 BotManager botManager = new(botToken, api);
@@ -46,6 +47,27 @@ namespace UVindexTGBot
             {
                 Console.WriteLine($"An unexpected error occurred: {ex.Message}");
             }
+        }
+
+        static string GetTokenFromArgsOrEnv(string[] args, string envVarName, int argPosition)
+        {
+            string? token = null;
+
+            if (args.Length > argPosition)
+            {
+                token = args[argPosition];
+            }
+            else
+            {
+                token = Environment.GetEnvironmentVariable(envVarName);
+            }
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new ArgumentException($"The {envVarName} must be provided via command-line arguments or the {envVarName} environment variable.");
+            }
+
+            return token;
         }
 
     }
