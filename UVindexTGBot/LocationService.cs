@@ -4,11 +4,19 @@ using Telegram.Bot;
 
 namespace UVindexTGBot
 {
-    internal class LocationService(TelegramBotClient botClient, ApiManager api, CancellationToken cancellationToken)
+    public class LocationService
     {
         public bool IsLocationReceived { get; set; }
+        private readonly ITelegramBotClient botClient;
+        private readonly ApiManager api;
 
-        public async Task RequestLocationAsync(long chatId)
+        public LocationService(ITelegramBotClient botClient, ApiManager api)
+        {
+            this.botClient = botClient;
+            this.api = api;
+        }
+
+        public async Task RequestLocationAsync(long chatId, CancellationToken cancellationToken)
         {
             var replyKeyboard = new ReplyKeyboardMarkup(new[]
             {
@@ -30,7 +38,7 @@ namespace UVindexTGBot
             );
         }
 
-        public async Task HandleLocationReceivedAsync(Message message)
+        public async Task HandleLocationReceivedAsync(Message message, CancellationToken cancellationToken)
         {
             var location = message.Location;
 
@@ -42,7 +50,7 @@ namespace UVindexTGBot
                     cancellationToken: cancellationToken
                 );
 
-                await RequestLocationAsync(message.Chat.Id);
+                await RequestLocationAsync(message.Chat.Id, cancellationToken);
                 return;
             }
 

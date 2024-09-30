@@ -1,0 +1,6 @@
+@UVIndexTgBot_HostAddress = http://localhost:5155
+
+GET {{UVIndexTgBot_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

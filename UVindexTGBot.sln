@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.8.34322.80
+VisualStudioVersion = 17.10.35027.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UVindexTGBot", "UVindexTGBot\UVindexTGBot.csproj", "{0E1E56D5-376D-444C-ACDB-91858F5D2971}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UVIndexTgBot", "UVIndexTgBot\UVIndexTgBot.csproj", "{37093AC4-CE69-40FD-A10E-AA1F1856D664}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0E1E56D5-376D-444C-ACDB-91858F5D2971}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0E1E56D5-376D-444C-ACDB-91858F5D2971}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0E1E56D5-376D-444C-ACDB-91858F5D2971}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0E1E56D5-376D-444C-ACDB-91858F5D2971}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37093AC4-CE69-40FD-A10E-AA1F1856D664}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37093AC4-CE69-40FD-A10E-AA1F1856D664}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37093AC4-CE69-40FD-A10E-AA1F1856D664}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37093AC4-CE69-40FD-A10E-AA1F1856D664}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {04D0A925-34A3-4E76-9CCD-B70E08DAF772}
+		SolutionGuid = {D3C738F0-98E3-4EB1-8FB5-38C4B3D0D54D}
 	EndGlobalSection
 EndGlobal

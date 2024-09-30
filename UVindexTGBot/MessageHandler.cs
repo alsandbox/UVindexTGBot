@@ -7,19 +7,17 @@ using Telegram.Bot.Exceptions;
 
 namespace UVindexTGBot
 {
-    internal class MessageHandler
+    public class MessageHandler
     {
-        private readonly TelegramBotClient botClient;
-        private readonly CancellationToken cancellationToken;
+        private readonly ITelegramBotClient botClient;
         private readonly LocationService locationService;
         private readonly UvUpdateScheduler uvUpdateScheduler;
         private long chatId;
         private bool isAwaitingCustomIntervalInput;
 
-        internal MessageHandler(TelegramBotClient botClient, LocationService locationService, UvUpdateScheduler uvUpdateScheduler, CancellationToken cancellationToken)
+        public MessageHandler(ITelegramBotClient botClient, LocationService locationService, UvUpdateScheduler uvUpdateScheduler)
         {
             this.botClient = botClient;
-            this.cancellationToken = cancellationToken;
             this.locationService = locationService;
             this.uvUpdateScheduler = uvUpdateScheduler;
         }
@@ -30,7 +28,7 @@ namespace UVindexTGBot
             {
                 if (update.Type is UpdateType.CallbackQuery && update.CallbackQuery is not null)
                 {
-                    await HandleCallbackQueryAsync(update.CallbackQuery);
+                    await HandleCallbackQueryAsync(update.CallbackQuery, cancellationToken);
                 }
 
                 if (update.Message is not { } message)
@@ -43,26 +41,26 @@ namespace UVindexTGBot
                 {
                     if (isAwaitingCustomIntervalInput)
                     {
-                        await HandleIntervalInputAsync(message.Text);
+                        await HandleIntervalInputAsync(message.Text, cancellationToken);
                     }
                     else
                     {
                         switch (message.Text.Split(' ')[0])
                         {
                             case "/start":
-                                await HandleStartCommandAsync();
+                                await HandleStartCommandAsync(cancellationToken);
                                 break;
                             case "/getuv":
-                                await uvUpdateScheduler.SendUvUpdateAsync(isUserRequest: true);
+                                await uvUpdateScheduler.SendUvUpdateAsync(cancellationToken, isUserRequest: true);
                                 break;
                             case "/changelocation":
-                                await locationService.RequestLocationAsync(chatId);
+                                await locationService.RequestLocationAsync(chatId, cancellationToken);
                                 break;
                             case "/setintervals":
-                                await HandleSetIntervalsCommandAsync();
+                                await HandleSetIntervalsCommandAsync(cancellationToken);
                                 break;
                             case "/cancelintervals":
-                                uvUpdateScheduler.CancelUvUpdates();
+                                uvUpdateScheduler.CancelUvUpdates(cancellationToken);
                                 break;
                         }
                     }
@@ -70,7 +68,7 @@ namespace UVindexTGBot
 
                 if (message.Type is MessageType.Location)
                 {
-                    await locationService.HandleLocationReceivedAsync(message);
+                    await locationService.HandleLocationReceivedAsync(message, cancellationToken);
 
                     if (locationService.IsLocationReceived)
                     {
@@ -89,7 +87,7 @@ namespace UVindexTGBot
             }
         }
 
-        private async Task HandleStartCommandAsync()
+        private async Task HandleStartCommandAsync(CancellationToken cancellationToken)
         {
             await botClient.SendTextMessageAsync(
                 chatId: chatId,
@@ -99,10 +97,10 @@ namespace UVindexTGBot
                       "You'll receive messages from sunrise to sunset because the UV index is 0 at night.",
                 cancellationToken: cancellationToken);
 
-            await locationService.RequestLocationAsync(chatId);
+            await locationService.RequestLocationAsync(chatId, cancellationToken);
         }
 
-        private async Task HandleSetIntervalsCommandAsync()
+        private async Task HandleSetIntervalsCommandAsync(CancellationToken cancellationToken)
         {
             var buttons = new InlineKeyboardButton[][]
             {
@@ -127,7 +125,7 @@ namespace UVindexTGBot
             );
         }
 
-        private async Task HandleCallbackQueryAsync(CallbackQuery callbackQuery)
+        private async Task HandleCallbackQueryAsync(CallbackQuery callbackQuery, CancellationToken cancellationToken)
         {
             switch (callbackQuery.Data)
             {
@@ -135,7 +133,7 @@ namespace UVindexTGBot
                 case "2":
                 case "3":
                 case "24":
-                    await HandleIntervalInputAsync(callbackQuery.Data);
+                    await HandleIntervalInputAsync(callbackQuery.Data, cancellationToken);
                     break;
                 case "custom":
                     isAwaitingCustomIntervalInput = true;
@@ -153,7 +151,7 @@ namespace UVindexTGBot
             );
         }
 
-        private async Task HandleIntervalInputAsync(string text)
+        private async Task HandleIntervalInputAsync(string text, CancellationToken cancellationToken)
         {
             string trimmedText = text.Trim();
 
@@ -162,7 +160,7 @@ namespace UVindexTGBot
                 && hours >= 1 && hours <= 24)
             {
                 var interval = TimeSpan.FromHours(hours);
-                uvUpdateScheduler.ScheduleUvUpdates(interval);
+                uvUpdateScheduler.ScheduleUvUpdates(interval, cancellationToken);
 
                 await botClient.SendTextMessageAsync(
                     chatId: chatId,

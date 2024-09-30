@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace UVindexTGBot
 {
-    internal class ApiManager
+    public class ApiManager
     {
         private const string ApiUrlTemplate = "{0}?lat={1}&lon={2}&dt={3}&appid={4}";
         public string? UvApiUrl { get; set; }
@@ -15,7 +15,7 @@ namespace UVindexTGBot
         public long Sunset { get; set; }
         internal string? BotToken { get; set; }
 
-        internal async Task GetWeatherDataFromApi()
+        internal async Task GetWeatherDataFromApi(CancellationToken cancellationToken = default)
         {
             long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             string requestUrl = string.Format(ApiUrlTemplate, UvApiUrl, Latitude, Longitude, currentTime, ApiKey);

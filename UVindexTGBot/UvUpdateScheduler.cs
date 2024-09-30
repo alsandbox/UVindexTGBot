@@ -2,32 +2,30 @@
 
 namespace UVindexTGBot
 {
-    internal class UvUpdateScheduler : IDisposable
+    public class UvUpdateScheduler : IDisposable
     {
-        private readonly TelegramBotClient botClient;
+        private readonly ITelegramBotClient botClient;
         private readonly ApiManager apiManager;
-        private readonly CancellationToken cancellationToken;
         private Timer? timer;
         private bool disposed;
 
         internal long ChatId { get; set; }
 
-        internal UvUpdateScheduler(TelegramBotClient botClient, ApiManager api, CancellationToken cancellationToken) 
+        public UvUpdateScheduler(ITelegramBotClient botClient, ApiManager api) 
         {
             this.botClient = botClient;
             apiManager = api;
-            this.cancellationToken = cancellationToken;
         }
 
-        internal void ScheduleUvUpdates(TimeSpan interval)
+        internal void ScheduleUvUpdates(TimeSpan interval, CancellationToken cancellationToken)
         {
-            timer = new Timer(async state => await SendUvUpdateAsync(), null, TimeSpan.Zero, interval);
+            timer = new Timer(async state => await SendUvUpdateAsync(cancellationToken), null, TimeSpan.Zero, interval);
         }
 
-        internal async Task SendUvUpdateAsync(bool isUserRequest = false)
+        internal async Task SendUvUpdateAsync(CancellationToken cancellationToken, bool isUserRequest = false)
         {
             long currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            await apiManager.GetWeatherDataFromApi();
+            await apiManager.GetWeatherDataFromApi(cancellationToken);
             var uvi = apiManager.Uvi;
 
             if (currentTime >= apiManager.Sunrise && currentTime <= apiManager.Sunset)
@@ -48,7 +46,7 @@ namespace UVindexTGBot
             }
         }
 
-        internal void CancelUvUpdates()
+        internal void CancelUvUpdates(CancellationToken cancellationToken)
         {
             timer?.Change(Timeout.Infinite, Timeout.Infinite);
 
