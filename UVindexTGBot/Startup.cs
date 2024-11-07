@@ -18,11 +18,9 @@ namespace UVindexTGBot
             services.AddControllers().AddNewtonsoftJson();
             services.AddSwaggerGen();
 
-            string? botToken = Configuration["BOT_TOKEN"];
-            string? apiKey = Configuration["API_KEY"];
-            string? uvUrl = Configuration["UvApiUrl"];
-
-            ValidateConfigurationParameters(botToken, apiKey, uvUrl);
+            string? botToken = Environment.GetEnvironmentVariable("BOT_TOKEN") ?? throw new ArgumentNullException(nameof(services), "BOT_TOKEN not provided.");
+            string? apiKey = Environment.GetEnvironmentVariable("API_KEY") ?? throw new ArgumentNullException(nameof(services), "API_KEY not provided.");
+            string? uvUrl = Environment.GetEnvironmentVariable("UvApiUrl") ?? throw new ArgumentNullException(nameof(services), "UvApiUrl not provided.");
 
             services.AddSingleton<ITelegramBotClient>(sp => new TelegramBotClient(botToken!));
             services.AddSingleton<BotManager>();
@@ -32,25 +30,7 @@ namespace UVindexTGBot
             services.AddSingleton<MessageHandler>();
         }
 
-        private void ValidateConfigurationParameters(string? botToken, string? apiKey, string? uvUrl)
-        {
-            if (botToken is null)
-            {
-                throw new ArgumentNullException(nameof(botToken), "BOT_TOKEN not provided.");
-            }
-
-            if (apiKey is null)
-            {
-                throw new ArgumentNullException(nameof(apiKey), "API_KEY not provided.");
-            }
-
-            if (uvUrl is null)
-            {
-                throw new ArgumentNullException(nameof(uvUrl), "UvApiUrl not provided.");
-            }
-        }
-
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
+        public static void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider)
         {
             if (env.IsDevelopment())
             {
@@ -67,10 +47,8 @@ namespace UVindexTGBot
             });
 
             var botClientStartup = app.ApplicationServices.GetRequiredService<ITelegramBotClient>();
-            string startupWebhookUrl = Configuration["WebhookUrl"]
-                ?? throw new ArgumentNullException(nameof(startupWebhookUrl), "WebhookUrl not provided.");
-
-            Console.WriteLine($"Setting webhook: {startupWebhookUrl}");
+            string startupWebhookUrl = Environment.GetEnvironmentVariable("WebhookUrl")
+                ?? throw new ArgumentNullException(nameof(app), "WebhookUrl not provided.");
 
             try
             {
